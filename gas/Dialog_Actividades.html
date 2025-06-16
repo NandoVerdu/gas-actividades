@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      padding: 1rem;
+      color: #212529;
+      margin: 0;
+    }
+    #main-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1, h3 {
+      margin-top: 0;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    textarea {
+      min-height: 80px;
+    }
+    .btn {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-primary { background-color: #0d6efd; color: white; }
+    .btn-secondary { background-color: #6c757d; color: white; }
+    .btn-danger { background-color: #dc3545; color: white; }
+    .ra-block { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 6px; background: #fdfdfd; }
+    .criterio-item { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .criterio-item label { flex-grow: 1; margin: 0; }
+    .criterio-item input { width: 80px; }
+    #status-message { margin-top: 1rem; font-weight: 500; padding: 0.5rem; border-radius: 4px; }
+    .status-success { background-color: #d4edda; color: #155724; }
+    .status-error { background-color: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <div id="main-container">
+    <h1>Gestor de Actividades</h1>
+    <form id="actividad-form">
+      <h3>Datos Generales</h3>
+      <div class="form-grid">
+        <div class="form-group"><label for="codigo">Código</label><input type="text" id="codigo" required></div>
+        <div class="form-group"><label for="nombre">Nombre</label><input type="text" id="nombre" required></div>
+        <div class="form-group"><label for="descripcion">Descripción</label><textarea id="descripcion"></textarea></div>
+        <div class="form-group"><label for="duracion">Duración</label><input type="number" id="duracion"></div>
+        <div class="form-group"><label for="unidadDidactica">Unidad Didáctica</label><input type="text" id="unidadDidactica"></div>
+        <div class="form-group"><label for="periodoEvaluacion">Periodo Evaluación</label><select id="periodoEvaluacion"><option>1ª Evaluación</option><option>2ª Evaluación</option><option>3ª Evaluación</option></select></div>
+        <div class="form-group"><label for="metodologia">Metodología</label><input type="text" id="metodologia"></div>
+        <div class="form-group"><label for="agrupamientos">Agrupamientos</label><input type="text" id="agrupamientos"></div>
+        <div class="form-group"><label for="herramientasTic">Herramientas TIC</label><input type="text" id="herramientasTic"></div>
+      </div>
+
+      <h3>Vinculaciones Curriculares</h3>
+      <div id="vinculaciones-container"></div>
+      <button type="button" class="btn btn-secondary" onclick="addRaBlock()">+ Añadir Resultado de Aprendizaje</button>
+
+      <button type="submit" class="btn btn-primary">Guardar Actividad</button>
+    </form>
+    <div id="status-message"></div>
+  </div>
+
+  <script>
+    function addRaBlock() {
+      const container = document.getElementById('vinculaciones-container');
+      const div = document.createElement('div');
+      div.className = 'ra-block';
+      div.innerHTML = `
+        <div class="form-group">
+          <label>Resultado de Aprendizaje</label>
+          <input type="text" class="resultado-aprendizaje">
+        </div>
+        <div class="criterio-item">
+          <label>Criterio</label>
+          <input type="text" class="criterio">
+          <input type="number" class="horas" placeholder="Horas">
+          <input type="number" class="peso" placeholder="Peso %">
+        </div>
+      `;
+      container.appendChild(div);
+    }
+
+    document.getElementById('actividad-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const generalData = {
+        Codigo: document.getElementById('codigo').value,
+        Nombre: document.getElementById('nombre').value,
+        Descripcion: document.getElementById('descripcion').value,
+        Duracion: document.getElementById('duracion').value,
+        unidadDidactica: document.getElementById('unidadDidactica').value,
+        periodoEvaluacion: document.getElementById('periodoEvaluacion').value,
+        metodologia: document.getElementById('metodologia').value,
+        agrupamientos: document.getElementById('agrupamientos').value,
+        herramientasTic: document.getElementById('herramientasTic').value
+      };
+
+      const vinculaciones = [];
+      document.querySelectorAll('.ra-block').forEach(block => {
+        const resultadoAprendizaje = block.querySelector('.resultado-aprendizaje').value;
+        const criterio = block.querySelector('.criterio').value;
+        const horas = block.querySelector('.horas').value;
+        const peso = block.querySelector('.peso').value;
+        if (resultadoAprendizaje && criterio && (horas || peso)) {
+          vinculaciones.push({
+            resultadoAprendizaje,
+            criterios: [{ criterio, horas, peso }]
+          });
+        }
+      });
+
+      if (vinculaciones.length === 0) {
+        document.getElementById('status-message').textContent = 'Debes ingresar al menos un RA con criterio.';
+        document.getElementById('status-message').className = 'status-error';
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res.error) {
+            document.getElementById('status-message').textContent = res.error;
+            document.getElementById('status-message').className = 'status-error';
+          } else {
+            document.getElementById('status-message').textContent = res.message;
+            document.getElementById('status-message').className = 'status-success';
+          }
+        })
+        .withFailureHandler(() => {
+          document.getElementById('status-message').textContent = 'Error al guardar actividad.';
+          document.getElementById('status-message').className = 'status-error';
+        })
+        .saveActividad({ generalData, vinculaciones });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8f9fa;
+            padding: 1rem;
+            color: #212529;
+            margin: 0;
+        }
+
+        #main-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 { margin-top: 0; font-size: 1.5rem; }
+        h3 { font-size: 1.1rem; border-bottom: 1px solid #dee2e6; padding-bottom: 0.5rem; margin-top: 2rem; }
+
+        /* --- FORMULARIOS --- */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-weight: 500; margin-bottom: 0.5rem; font-size: 0.9rem; }
+        input[type="date"], input[type="number"], select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        
+        /* --- BOTONES --- */
+        .btn {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-decoration: none;
+            transition: background-color 0.15s ease-in-out;
+        }
+        .btn:disabled { cursor: not-allowed; opacity: 0.65; }
+        .btn-primary { color: #fff; background-color: #0d6efd; border-color: #0d6efd; width: 100%; margin-top: 1.5rem; }
+        .btn-primary:hover { background-color: #0b5ed7; }
+        .btn-secondary { color: #fff; background-color: #6c757d; border-color: #6c757d; }
+        .btn-danger { color: #fff; background-color: #dc3545; border-color: #dc3545; font-size: 0.8rem; padding: 0.2rem 0.5rem; }
+        .btn-success { color: #fff; background-color: #198754; border-color: #198754; }
+        .btn-success:hover { background-color: #157347; border-color: #146c43; }
+
+        /* --- SECCIONES ESPECÍFICAS --- */
+        #dias-list .dia-row { display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem; }
+        #dias-list .dia-row > div:first-child { flex-grow: 1; }
+        #add-dia-btn { margin-top: 0.5rem; }
+        
+        #info-vacaciones { background-color: #e9ecef; padding: 1rem; border-radius: 6px; margin-top: 1.5rem; }
+        #info-vacaciones strong { color: #0d6efd; }
+        
+        #results-container { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #dee2e6; }
+        #results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center; }
+        .result-card { background-color: #f8f9fa; padding: 1rem; border-radius: 6px; }
+        .result-value { font-size: 2.5rem; font-weight: bold; }
+        .result-label { font-size: 0.9rem; color: #6c757d; }
+
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; font-size: 1.2rem; font-weight: bold; }
+        
+        #status-message {
+            margin-top: 1rem;
+            font-weight: 500;
+            min-height: 1.2em;
+            text-align: center;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        .status-success { color: #155724; background-color: #d4edda; }
+        .status-error { color: #721c24; background-color: #f8d7da; }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">Cargando...</div>
+    <div id="main-container">
+        <h1>Calculadora de Sesiones</h1>
+        
+        <h3>Fechas Principales</h3>
+        <div class="form-grid">
+            <div class="form-group"><label for="fecha-inicio">Fecha de Inicio</label><input type="date" id="fecha-inicio" value="2025-09-08"></div>
+            <div class="form-group"><label for="fecha-fin">Fecha de Fin</label><input type="date" id="fecha-fin" value="2026-05-29"></div>
+        </div>
+
+        <h3>Fechas de Evaluación</h3>
+        <div class="form-grid">
+             <div class="form-group"><label for="eval1">1ª Evaluación</label><input type="date" id="eval1" value="2025-12-20"></div>
+             <div class="form-group"><label for="eval2">2ª Evaluación</label><input type="date" id="eval2" value="2026-02-20"></div>
+             <div class="form-group"><label for="eval3">3ª Evaluación</label><input type="date" id="eval3" value="2026-05-29"></div>
+        </div>
+
+        <h3>Días y Sesiones de Clase</h3>
+        <div id="dias-list"></div>
+        <button id="add-dia-btn" class="btn btn-secondary">+ Añadir Día</button>
+        
+        <button id="calculate-btn" class="btn btn-primary">Calcular Sesiones</button>
+        
+        <div id="info-vacaciones">Cargando vacaciones...</div>
+        
+        <div id="results-container" style="display: none;">
+            <h3>Resultados</h3>
+            <div id="results-grid">
+                <div class="result-card"><div id="res-p1" class="result-value">0</div><div class="result-label">Periodo 1</div></div>
+                <div class="result-card"><div id="res-p2" class="result-value">0</div><div class="result-label">Periodo 2</div></div>
+                <div class="result-card"><div id="res-p3" class="result-value">0</div><div class="result-label">Periodo 3</div></div>
+            </div>
+            
+            <button id="register-btn" class="btn btn-success" style="display: none; width:100%; margin-top: 1rem;">
+              Registrar en Hoja de Cálculo
+            </button>
+        </div>
+        
+        <div id="status-message"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Referencias a elementos del DOM
+            const btnAddDia = document.getElementById('add-dia-btn');
+            const diasList = document.getElementById('dias-list');
+            const btnCalculate = document.getElementById('calculate-btn');
+            const btnRegister = document.getElementById('register-btn');
+            const infoVacaciones = document.getElementById('info-vacaciones');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const resultsContainer = document.getElementById('results-container');
+            const statusMessage = document.getElementById('status-message');
+
+            // Variable para guardar los resultados temporalmente
+            let calculatedResults = null;
+
+            // Lógica para añadir/quitar días de clase
+            btnAddDia.addEventListener('click', () => {
+                const row = document.createElement('div');
+                row.className = 'dia-row';
+                row.innerHTML = `
+                    <div><select class="dia-semana"><option value="Lunes">Lunes</option><option value="Martes">Martes</option><option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option><option value="Viernes">Viernes</option><option value="Sábado">Sábado</option><option value="Domingo">Domingo</option></select></div>
+                    <div><input type="number" class="sesiones-dia" value="1" min="1"></div>
+                    <div><button class="btn btn-danger remove-dia-btn">X</button></div>
+                `;
+                diasList.appendChild(row);
+            });
+
+            diasList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-dia-btn')) {
+                    e.target.closest('.dia-row').remove();
+                }
+            });
+
+            // Cargar vacaciones automáticamente al iniciar
+            google.script.run
+                .withSuccessHandler(response => {
+                    if (response.error) {
+                        infoVacaciones.style.color = 'red';
+                        infoVacaciones.innerHTML = `<strong>Error:</strong> ${response.error}`;
+                    } else {
+                        infoVacaciones.innerHTML = `Se cargaron <strong>${response.length}</strong> días de vacaciones desde 'CONFIGURACIÓN'.`;
+                    }
+                })
+                .withFailureHandler(err => {
+                    infoVacaciones.style.color = 'red';
+                    infoVacaciones.innerHTML = `<strong>Error de comunicación.</strong>`;
+                })
+                .getVacationDates();
+
+            // Lógica del botón CALCULAR
+            btnCalculate.addEventListener('click', () => {
+                loadingOverlay.textContent = 'Calculando...';
+                loadingOverlay.style.display = 'flex';
+                statusMessage.textContent = '';
+                statusMessage.className = '';
+                resultsContainer.style.display = 'none';
+                btnRegister.style.display = 'none';
+
+                const diasSesiones = [];
+                document.querySelectorAll('.dia-row').forEach(row => {
+                    diasSesiones.push({
+                        dia: row.querySelector('.dia-semana').value,
+                        sesiones: row.querySelector('.sesiones-dia').value
+                    });
+                });
+                
+                const camposRequeridos = ['fecha-inicio', 'fecha-fin', 'eval1', 'eval2', 'eval3'];
+                let hayError = false;
+                for (const id of camposRequeridos) {
+                    if (!document.getElementById(id).value) {
+                         statusMessage.className = 'status-error';
+                         statusMessage.textContent = 'Error: Por favor, rellena todas las fechas.';
+                         hayError = true; break;
+                    }
+                }
+                if (!hayError && diasSesiones.length === 0) {
+                     statusMessage.className = 'status-error';
+                     statusMessage.textContent = 'Error: Debes añadir al menos un día de clase.';
+                     hayError = true;
+                }
+                
+                if (hayError) {
+                    loadingOverlay.style.display = 'none';
+                    return;
+                }
+
+                const payload = {
+                    fecha_inicio: document.getElementById('fecha-inicio').value,
+                    fecha_fin: document.getElementById('fecha-fin').value,
+                    eval1: document.getElementById('eval1').value,
+                    eval2: document.getElementById('eval2').value,
+                    eval3: document.getElementById('eval3').value,
+                    dias_sesiones: diasSesiones,
+                };
+                
+                google.script.run
+                    .withSuccessHandler(response => {
+                        loadingOverlay.style.display = 'none';
+                        if (response.error) {
+                            statusMessage.className = 'status-error';
+                            statusMessage.textContent = `Error: ${response.error}`;
+                        } else {
+                            calculatedResults = response;
+                            document.getElementById('res-p1').textContent = response[0];
+                            document.getElementById('res-p2').textContent = response[1];
+                            document.getElementById('res-p3').textContent = response[2];
+                            resultsContainer.style.display = 'block';
+                            btnRegister.style.display = 'block';
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        loadingOverlay.style.display = 'none';
+                        statusMessage.className = 'status-error';
+                        statusMessage.textContent = 'Error de comunicación con el servidor.';
+                    })
+                    .SESIONESCLASEBACKEND(payload);
+            });
+
+            // Lógica del botón REGISTRAR
+            btnRegister.addEventListener('click', () => {
+                if (!calculatedResults) return;
+
+                loadingOverlay.textContent = 'Registrando...';
+                loadingOverlay.style.display = 'flex';
+                statusMessage.textContent = '';
+                statusMessage.className = '';
+                btnRegister.disabled = true;
+
+                google.script.run
+                    .withSuccessHandler(response => {
+                        loadingOverlay.style.display = 'none';
+                        btnRegister.disabled = false;
+                        if (response.error) {
+                            statusMessage.className = 'status-error';
+                            statusMessage.textContent = response.error;
+                        } else {
+                            statusMessage.className = 'status-success';
+                            statusMessage.textContent = response.message;
+                            btnRegister.style.display = 'none';
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        loadingOverlay.style.display = 'none';
+                        btnRegister.disabled = false;
+                        statusMessage.className = 'status-error';
+                        statusMessage.textContent = 'Error de comunicación al registrar.';
+                    })
+                    .writeResultsToSheet(calculatedResults);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -10,7 +10,7 @@ function doGet(e) {
 
 function getSheetData() {
   let ss = SpreadsheetApp.getActiveSpreadsheet()
-  let ws = ss.getSheetByName('Sheet1')
+  let ws = ss.getSheetByName('RESULTADOS')
   let data = ws.getRange(2, 1, ws.getLastRow() - 1, 3).getValues()
 
   return data
@@ -18,6 +18,6 @@ function getSheetData() {
 
 function writeValues(val) {
   let ss = SpreadsheetApp.getActiveSpreadsheet()
-  let ws = ss.getSheetByName('Sheet1')
+  let ws = ss.getSheetByName('RESULTADOS')
   ws.getRange(ws.getLastRow() + 1, 1, 1, val.length).setValues([val])
 }
